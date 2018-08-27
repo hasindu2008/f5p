@@ -14,8 +14,7 @@
     receiver will be able wait until all data is received.
     
 */
-void send_full_msg(int socket, void *buffer, long length);
-
+void send_full_msg(int socket, void* buffer, long length);
 
 /*  Function to receive data 
 
@@ -31,9 +30,7 @@ void send_full_msg(int socket, void *buffer, long length);
     which is needed inside the function to prevent any overflows. 
     
 */
-long recv_full_msg(int socket, void *buffer, long length);
-
-
+long recv_full_msg(int socket, void* buffer, long length);
 
 /***************************Server side*******************************************************/
 
@@ -45,29 +42,21 @@ int TCP_server_init(int PORT);
 
 /*Accept a client through the listening socket "listenfd"
   Return the connection socket.  
-*/    
+*/
 int TCP_server_accept_client(int listenfd);
 
-/*Disconnect a connected client*/    
+/*Disconnect a connected client*/
 void TCP_server_disconnect_client(int connectfd);
 
-/*Close down the listening socket*/    
+/*Close down the listening socket*/
 void TCP_server_shutdown(int listenfd);
-
-
 
 /********************************Client side***************************************************/
 
 /* Connect to a TCP server at the port "PORT" at IP address "ip"
    returns the connection socket
 */
-int TCP_client_connect(char *ip, int PORT);
+int TCP_client_connect(char* ip, int PORT);
 
 /* Disconnect*/
 void TCP_client_disconnect(int socketfd);
-
-
-
-
-
-

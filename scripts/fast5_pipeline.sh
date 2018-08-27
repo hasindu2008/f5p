@@ -75,7 +75,7 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
     /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL
 
     #minimap
-    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --multi-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL
+    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL
 
 
     #sorting
@@ -92,9 +92,9 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
         
     #remove the rest    
     rm -rf $FAST5EXTRACT
-    rm "$FASTQLOCAL" #bad
-    rm $SAMLOCAL $BAMLOCAL $METHLOCAL
-    rm $SCRATCH/*.tmp ##bad
+    rm -f $FASTQLOCAL $FASTQLOCAL.index $FASTQLOCAL.fastq.index.fai $FASTQLOCAL.fastq.index.gzi $FASTQLOCAL.index.readdb 
+    rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
+    #rm -f $TMP"0.tmp"
  
     
 
