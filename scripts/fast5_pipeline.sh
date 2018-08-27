@@ -92,7 +92,7 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
         
     #remove the rest    
     rm -rf $FAST5EXTRACT
-    rm -f $FASTQLOCAL $FASTQLOCAL.index $FASTQLOCAL.fastq.index.fai $FASTQLOCAL.fastq.index.gzi $FASTQLOCAL.index.readdb 
+    rm -f $FASTQLOCAL $FASTQLOCAL.index $FASTQLOCAL.index.fai $FASTQLOCAL.index.gzi $FASTQLOCAL.index.readdb 
     rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
     #rm -f $TMP"0.tmp"
  

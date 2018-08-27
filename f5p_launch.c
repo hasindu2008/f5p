@@ -9,24 +9,81 @@
 #include <unistd.h>
 
 #define MAX_PATH_SIZE 4096
-
 #define MAX_FILES 4096
+
+#define MAX_IP_LEN	256
+#define MAX_IPS	256
+
 #define PORT 20022
 
-#define IP "10.40.18.1"
+
+pthread_mutex_t file_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct{
+	char** file_list;
+	int32_t file_list_idx;
+	int32_t file_list_cnt;
+	char** ip_list;
+}node_global_args_t;
+
+node_global_args_t node_global_args;
+
+void *node_handler(void *arg){
+	
+	int32_t id = *((int32_t *)arg);
+	
+	char buffer[MAX_PATH_SIZE];
+	
+	while(1){
+		
+
+		pthread_mutex_lock(&file_list_mutex);
+		int32_t i =  node_global_args.file_list_idx;
+		if (i<node_global_args.file_list_cnt){
+			node_global_args.file_list_idx++;
+			pthread_mutex_unlock(&file_list_mutex);
+		}
+		else{
+			pthread_mutex_unlock(&file_list_mutex);
+			break;
+		}
+		
+		//Connect to the server given as argument on port
+		fprintf(stderr, "Connecting to %s\n", node_global_args.ip_list[id]);
+		int socketfd = TCP_client_connect(node_global_args.ip_list[id], PORT);		
+		
+		fprintf(stderr, "Assign %s to %s\n", node_global_args.file_list[i],node_global_args.ip_list[id]);
+		//send the message
+		send_full_msg(socketfd, node_global_args.file_list[i], strlen(node_global_args.file_list[i]));
+
+		//receive the message
+		int received = recv_full_msg(socketfd, buffer, MAX_PATH_SIZE);
+
+		//print the message
+		buffer[received] = '\0'; //null character before printing the string
+		fprintf(stderr, "Recieved : %s\n", buffer);
+
+		//close the connection
+		TCP_client_disconnect(socketfd);
+    
+	}
+	
+	pthread_exit(0);
+	
+}
+
 
 int main(int argc, char* argv[]) {
     //argument check check
     if (argc != 3) {
-        ERROR("Not enough arguments. Usage %s <file_list>\n", argv[0]);
+        ERROR("Not enough arguments. Usage %s <ip_list> <file_list>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
-    char buffer[MAX_PATH_SIZE];
+	
     char** file_list = (char**)malloc(sizeof(char*) * (MAX_FILES));
     MALLOC_CHK(file_list);
-
-    FILE* file_list_fp = fopen(argv[1], "r");
+	char* file_list_name = argv[2];
+    FILE* file_list_fp = fopen(file_list_name, "r");
     NULL_CHK(file_list_fp);
 
     int32_t file_list_cnt = 0;
@@ -52,7 +109,7 @@ int main(int argc, char* argv[]) {
             free(line);
             ERROR("The number of entries in %s exceeded the hard coded limit "
                   "%d\n",
-                  argv[1], MAX_FILES);
+                  file_list_name, MAX_FILES);
             exit(EXIT_FAILURE);
         }
         if (line[readlinebytes - 1] == '\n' ||
@@ -62,26 +119,79 @@ int main(int argc, char* argv[]) {
         file_list[file_list_cnt] = line;
         file_list_cnt++;
     }
+	fclose(file_list_fp);
 
-    for (i = 0; i < file_list_cnt; i++) {
-        fprintf(stderr, "%s\n", file_list[i]);
+	
+	char** ip_list = (char**)malloc(sizeof(char*) * (MAX_IPS));
+    MALLOC_CHK(file_list);
+    //reading ip file, Contains what other hosts should be connected
+    char *ip_list_name = argv[1];
+	FILE *ip_list_fp = fopen(ip_list_name,"r");
+	NULL_CHK(ip_list_fp);
+	uint32_t ip_cnt=0;	
 
-        //Connect to the server given as argument on port
-        int socketfd = TCP_client_connect(IP, PORT);
+	while (1) {
+        size_t line_size = MAX_IP_LEN;
+        char* line =
+            malloc(sizeof(char) * (line_size)); //filepath+newline+nullcharacter
+        MALLOC_CHK(line);
 
-        //send the message
-        send_full_msg(socketfd, file_list[i], strlen(file_list[i]));
+        int32_t readlinebytes = getline(&line, &line_size, ip_list_fp);
+        if (readlinebytes == -1) { //file has ended
+            free(line);
+            break;
+        } else if (readlinebytes > MAX_IP_LEN) {
+            free(line);
+            ERROR("The length %s is longer hard coded limit %d\n", line,
+                  MAX_IP_LEN);
+            exit(EXIT_FAILURE);
+        }
+        if (ip_cnt > MAX_IPS) {
+            free(line);
+            ERROR("The number of entries in %s exceeded the hard coded limit "
+                  "%d\n",
+                  ip_list_name, MAX_IPS);
+            exit(EXIT_FAILURE);
+        }
+        if (line[readlinebytes - 1] == '\n' ||
+            line[readlinebytes - 1] == '\r') {
+            line[readlinebytes - 1] = '\0';
+        }
+        ip_list[ip_cnt] = line;
+        ip_cnt++;
+    }	
+	fclose(ip_list_fp); 
+	
+    //data structures for clients (connect to servers running on other ips)
+    pthread_t node_thread[MAX_IPS];     
+    int32_t thread_id[MAX_IPS];
+ 
+	node_global_args.file_list=file_list;
+	node_global_args.file_list_cnt=file_list_cnt;
+	node_global_args.file_list_idx=0;
+	node_global_args.ip_list=ip_list;
 
-        //receive the message
-        int received = recv_full_msg(socketfd, buffer, MAX_PATH_SIZE);
-
-        //print the message
-        buffer[received] = '\0'; //null character before printing the string
-        fprintf(stderr, "Recieved : %s\n", buffer);
-
-        //close the connection
-        TCP_client_disconnect(socketfd);
+    //First create threads for clients
+    for(i=0;i<ip_cnt;i++){
+        thread_id[i]=i;
+        int ret = pthread_create( &node_thread[i], NULL, node_handler, (void *)(&thread_id[i])) ;
+        if(ret!=0){
+			perror("Error creating thread");
+			exit(EXIT_FAILURE);
+		}	
     }
+	
+	
+    //joining client side threads
+    for(i=0;i<ip_cnt;i++){
+        int ret = pthread_join ( node_thread[i], NULL );
+        if(ret!=0){
+			perror("Error joining thread");
+			exit(EXIT_FAILURE);
+		}	
+    } 
+	
+	//free iplist and filelist
 
     return 0;
 }
