@@ -13,6 +13,7 @@
 #define BUFFER_SIZE 4096
 
 #define SCRIPT "/bin/ls"
+#define PORT 20022
 
 void sig_handler(int sig) {
     void* array[100];
@@ -34,8 +35,8 @@ int main(int argc, char* argv[]) {
     
     char buffer[BUFFER_SIZE];
     
-    //create a listening socket on port 4777
-	int listenfd=TCP_server_init(4777);
+    //create a listening socket on port 
+	int listenfd=TCP_server_init(PORT);
     
 
  while(1){   

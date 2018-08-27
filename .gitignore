@@ -67,3 +67,4 @@ autom4te.cache
 /tmp/
 /htslib
 /hdf5
+/data/logs
