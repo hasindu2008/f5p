@@ -68,3 +68,6 @@ autom4te.cache
 /htslib
 /hdf5
 /data/logs
+/f5p_launch
+/f5p_daemon
+/f5p_launch_test

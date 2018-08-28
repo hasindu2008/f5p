@@ -20,7 +20,7 @@
 #include <unistd.h>
 
 #define MAXARG 256
-int system_async(char* buffer) {
+static inline int system_async(char* buffer) {
     int i = 0;
     int pid;               //process id
     char* arglist[MAXARG]; //store the arguments
@@ -54,7 +54,9 @@ int system_async(char* buffer) {
     if (pid == 0) {
         int check = execv(arglist[0], arglist);
         if (check == -1) { /* If cannot execute print an error and exit child*/
-            perror("Execution failed");
+            fprintf(stderr,
+            "[%s::ERROR]\033[1;31m Execution failed : %s.\033[0m\n",
+            __func__, strerror(errno));
             exit(EXIT_FAILURE);
         }
     } else {
@@ -65,17 +67,23 @@ int system_async(char* buffer) {
     return pid;
 }
 
-void wait_async(int pid) {
+static inline int wait_async(int pid) {
     int status = 0;
     int ret = waitpid(pid, &status, 0);
     if (ret < 0) {
         perror("Waiting failed. Premature exit of a child?");
         exit(EXIT_FAILURE);
     }
+    if(WIFEXITED(status)){
+        return WEXITSTATUS(status);
+    }
+    else{
+        return -1;
+    }
 }
 
 //a function to get ip using host name
-int get_ip(char* hostname, char* ip) {
+static inline int get_ip(char* hostname, char* ip) {
     struct hostent* he;
     struct in_addr** addr_list;
     int i;
