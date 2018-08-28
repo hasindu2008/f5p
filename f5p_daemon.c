@@ -9,10 +9,13 @@
 #include <string.h>
 #include <unistd.h>
 
+//maximum limit for a file path
 #define PATH_MAX 4096
+//upper limit for the communication buffer
 #define BUFFER_SIZE 4096
-
+//hardcoded location of the pipeline script
 #define SCRIPT "/nanopore/bin/fast5_pipeline.sh"
+//port in which the deamon will listen
 #define PORT 20022
 
 void sig_handler(int sig) {
@@ -33,6 +36,7 @@ void sig_handler(int sig) {
 int main(int argc, char* argv[]) {
     signal(SIGSEGV, sig_handler);
 
+    //buffer for communication
     char buffer[BUFFER_SIZE];
 
     //create a listening socket on port
@@ -46,20 +50,19 @@ int main(int argc, char* argv[]) {
         int received = recv_full_msg(connectfd, buffer, BUFFER_SIZE);
 
         //print the message
-        buffer[received] =
-            '\0'; //null character before priniting the stringsince
-        fprintf(stderr, "Recieved : %s\n", buffer);
+        buffer[received] = '\0'; //null character before printing the string
+        INFO("Recieved %s.", buffer);
 
+        //some hidden quit method
         if (strcmp(buffer, "quit!") == 0) {
             return 0;
         }
 
-        //execute
+        //execute the script
         char command[PATH_MAX * 2];
         sprintf(command, "%s %s", SCRIPT, buffer);
-        fprintf(stderr, "command : %s\n", command);
+        INFO("Command to be run %s.", command);
         int pid = system_async(command);
-
         wait_async(pid);
 
         //Copy a string to buffer

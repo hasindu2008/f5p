@@ -32,6 +32,9 @@ void send_full_msg(int socket, void* buffer, long length);
 */
 long recv_full_msg(int socket, void* buffer, long length);
 
+//similar to recv_full_msg but try only a number of times specified by 'times' before giving up
+long recv_full_msg_try(int socket, void* buffer, long length, int times);
+
 /***************************Server side*******************************************************/
 
 /*Create a TCP socket on PORT

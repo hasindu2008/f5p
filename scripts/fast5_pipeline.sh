@@ -63,12 +63,14 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
 
     #copy and untar fast5
     cp $FAST5TAR $FAST5TARLOCAL
+	test -d $FAST5EXTRACT && rm -rf $FAST5EXTRACT
     mkdir $FAST5EXTRACT
     tar xf $FAST5TARLOCAL -C $FAST5EXTRACT 
     rm $FAST5TARLOCAL
         
     #copy and uncompress fastq
     cp $FASTQGZ $FASTQGZLOCAL
+	test -e $FASTQLOCAL && rm $FASTQLOCAL
     gunzip $FASTQGZLOCAL
         
     #index

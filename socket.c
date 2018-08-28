@@ -19,6 +19,20 @@ void send_all(int socket, void* buffer, long length);
 /*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
 void recv_all(int socket, void* buffer, long length);
 
+//receive all but try olly times before giving up
+int recv_all_try(int socket, void* buffer, long length, int times);
+
+//some macros
+#define WARNING(arg, ...)                                                      \
+    fprintf(stderr, "[%s::WARNING]\033[1;33m " arg "\033[0m\n", __func__,      \
+            __VA_ARGS__)
+#define ERROR(arg, ...)                                                        \
+    fprintf(stderr, "[%s::ERROR]\033[1;31m " arg "\033[0m\n", __func__,        \
+            __VA_ARGS__)
+#define INFO(arg, ...)                                                         \
+    fprintf(stderr, "[%s::INFO] " arg "\n", __func__,         \
+            __VA_ARGS__)
+
 /*******************************Blocking send and receive***********************************/
 
 /*Send the number of bytes to be sent. Then send the actual data.*/
@@ -32,13 +46,35 @@ long recv_full_msg(int socket, void* buffer, long length) {
     long expected_length = 0;
     recv_all(socket, &expected_length, sizeof(long));
 
-    fprintf(stderr, "receiving a message of size %ld\n", expected_length);
+    INFO("Receiving a message of size %ld.", expected_length);
 
     if (expected_length > length) {
-        fprintf(stderr, "Buffer is too small to fit expected data\n");
+        WARNING("Buffer of size %ld is too small to fit expected data.",
+                expected_length);
     }
 
     recv_all(socket, buffer, expected_length);
+    return expected_length;
+}
+
+long recv_full_msg_try(int socket, void* buffer, long length, int times) {
+    long expected_length = 0;
+    long ret = recv_all_try(socket, &expected_length, sizeof(long), times);
+    if (ret < 0) {
+        return ret;
+    }
+
+    INFO("Receiving a message of size %ld.", expected_length);
+
+    if (expected_length > length) {
+        WARNING("Buffer of size %ld is too small to fit expected data.",
+                expected_length);
+    }
+
+    ret = recv_all_try(socket, buffer, expected_length, times);
+    if (ret < 0) {
+        return ret;
+    }
     return expected_length;
 }
 
@@ -65,7 +101,7 @@ int TCP_server_init(int PORT) {
     int enable = 1;
     if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) <
         0) {
-        perror("setsockopt(SO_REUSEADDR) failed");
+        WARNING("%s", "setsockopt(SO_REUSEADDR) failed");
     }
 
     //try binding
@@ -73,7 +109,9 @@ int TCP_server_init(int PORT) {
     while (ret == -1) {
         ret = bind(listenfd, (struct sockaddr*)&server, sizeof(server));
         if (ret == -1) {
-            fprintf(stderr, "Cannot bind : Address is used. Trying agin..\n");
+            WARNING(
+                "%s",
+                "Cannot bind to address as it is already used. Trying agin.");
             sleep(1);
         }
     }
@@ -85,12 +123,12 @@ int TCP_server_init(int PORT) {
     //ret=bind(listenfd,(struct sockaddr *)&server, sizeof(server));
 
     errorCheck(ret, "Cannot bind");
-    fprintf(stderr, "Binding successfull... port : %d\n", PORT);
+    INFO("Binding successfull to port %d.", PORT);
 
     //now listen
     ret = listen(listenfd, 5);
     errorCheck(ret, "Cannot listen");
-    fprintf(stderr, "Listening to port %d...\n", PORT);
+    INFO("Listening on port %d.", PORT);
 
     return listenfd;
 }
@@ -109,7 +147,7 @@ int TCP_server_accept_client(int listenfd) {
     //get ip to string
     char ip[16];
     inet_ntop(AF_INET, &client.sin_addr, ip, clientlen);
-    fprintf(stderr, "Client %s:%d connected\n", ip, client.sin_port);
+    INFO("Client %s:%d connected.", ip, client.sin_port);
 
     return connectfd;
 }
@@ -118,15 +156,15 @@ int TCP_server_accept_client(int listenfd) {
 void TCP_server_disconnect_client(int connectfd) {
     //close sockets
     int ret = close(connectfd);
-    errorCheck(ret, "Cannot close socket");
-    fprintf(stderr, "Client disconnected\n");
+    errorCheck(ret, "Cannot close socket.");
+    INFO("%s", "Client disconnected.");
 }
 
 /*Close down the listening socket*/
 void TCP_server_shutdown(int listenfd) {
     //we do not need the listening socket now
     int ret = close(listenfd);
-    errorCheck(ret, "Cannot close socket");
+    errorCheck(ret, "Cannot close socket.");
 }
 
 /********************************Client side***************************************************/
@@ -135,7 +173,7 @@ void TCP_server_shutdown(int listenfd) {
 int TCP_client_connect(char* ip, int PORT) {
     //socket for connecting
     int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-    errorCheck(socketfd, "Cannot create socket");
+    errorCheck(socketfd, "Cannot create socket.");
 
     //initializing the server address and assigning port numbers
     struct sockaddr_in server;
@@ -153,8 +191,8 @@ int TCP_client_connect(char* ip, int PORT) {
         sleep(1);
     }
 
-    errorCheck(ret, "Cannot connect");
-    fprintf(stderr, "Connected to server \n");
+    errorCheck(ret, "Cannot connect.");
+    INFO("Connected to server %s.", ip);
 
     return socketfd;
 }
@@ -163,9 +201,9 @@ int TCP_client_connect(char* ip, int PORT) {
 void TCP_client_disconnect(int socketfd) {
     //closing sockets
     int ret = shutdown(socketfd, SHUT_RDWR);
-    errorCheck(ret, "Cannot disconnect");
+    errorCheck(ret, "Cannot disconnect.");
     ret = close(socketfd);
-    errorCheck(ret, "Cannot close socket");
+    errorCheck(ret, "Cannot close socket.");
 }
 
 /************************************Internal Functions*****************************************/
@@ -185,7 +223,7 @@ void send_all(int socket, void* buffer, long length) {
     while (length > 0) {
         i = send(socket, ptr, length, 0);
         if (i < 1) {
-            perror("Could not send all data");
+            WARNING("%s", "Could not send all data. Trying again.");
             sleep(1);
         }
         ptr += i;
@@ -201,11 +239,33 @@ void recv_all(int socket, void* buffer, long length) {
     while (length > 0) {
         i = recv(socket, ptr, length, 0);
         if (i < 1) {
-            perror("Could not receive all data");
+            WARNING("%s", "Could not receive all data. Trying again.");
             sleep(1);
         }
         ptr += i;
         length -= i;
     }
     return;
+}
+
+/*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
+int recv_all_try(int socket, void* buffer, long length, int times) {
+    char* ptr = (char*)buffer;
+    long i = 0;
+    int counter = 0;
+    while (length > 0) {
+        i = recv(socket, ptr, length, 0);
+        if (i < 1) {
+            WARNING("%s", "Could not receive all data. Trying again.");
+            sleep(1);
+            counter++;
+            if (counter > times) {
+                ERROR("%s", "Socket is probably broken. Giving up.");
+                return -1;
+            }
+        }
+        ptr += i;
+        length -= i;
+    }
+    return 0;
 }
