@@ -71,3 +71,4 @@ autom4te.cache
 /f5p_launch
 /f5p_daemon
 /f5p_launch_test
+/*.cfg

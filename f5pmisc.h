@@ -55,8 +55,8 @@ static inline int system_async(char* buffer) {
         int check = execv(arglist[0], arglist);
         if (check == -1) { /* If cannot execute print an error and exit child*/
             fprintf(stderr,
-            "[%s::ERROR]\033[1;31m Execution failed : %s.\033[0m\n",
-            __func__, strerror(errno));
+                    "[%s::ERROR]\033[1;31m Execution failed : %s.\033[0m\n",
+                    __func__, strerror(errno));
             exit(EXIT_FAILURE);
         }
     } else {
@@ -74,10 +74,9 @@ static inline int wait_async(int pid) {
         perror("Waiting failed. Premature exit of a child?");
         exit(EXIT_FAILURE);
     }
-    if(WIFEXITED(status)){
+    if (WIFEXITED(status)) {
         return WEXITSTATUS(status);
-    }
-    else{
+    } else {
         return -1;
     }
 }

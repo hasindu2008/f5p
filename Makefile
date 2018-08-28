@@ -18,7 +18,7 @@ f5p_launch_test : socket.c f5p_launch_test.c error.c $(DEPS)
 	$(CC) $(CFLAGS) socket.c f5p_launch_test.c error.c $(LDFLAGS) -o $@
 	
 clean:
-	rm -rf f5p_daemon f5p_launch f5p_launch_test *.o *.out
+	rm -rf f5p_daemon f5p_launch f5p_launch_test *.o *.out *.cfg
 
 # Autoformat code with clang format
 format:

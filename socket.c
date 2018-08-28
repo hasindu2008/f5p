@@ -30,8 +30,7 @@ int recv_all_try(int socket, void* buffer, long length, int times);
     fprintf(stderr, "[%s::ERROR]\033[1;31m " arg "\033[0m\n", __func__,        \
             __VA_ARGS__)
 #define INFO(arg, ...)                                                         \
-    fprintf(stderr, "[%s::INFO] " arg "\n", __func__,         \
-            __VA_ARGS__)
+    fprintf(stderr, "[%s::INFO] " arg "\n", __func__, __VA_ARGS__)
 
 /*******************************Blocking send and receive***********************************/
 

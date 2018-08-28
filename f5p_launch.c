@@ -34,7 +34,8 @@ typedef struct {
     int32_t failed
         [MAX_FILES]; //the indices (of file_list) for completely failed tar files due to device hangs (todo : malloc later)
     int32_t failed_cnt; //the number of such failures
-    int32_t num_hangs[MAX_IPS];  //number of times a node disconnected (todo : malloc later)
+    int32_t num_hangs
+        [MAX_IPS]; //number of times a node disconnected (todo : malloc later)
     int32_t failed_other //failed due to another reason. See the logs.
         [MAX_FILES];
     int32_t failed_other_cnt; //the number of other failures
@@ -51,12 +52,12 @@ void* node_handler(void* arg) {
     char buffer[MAX_PATH_SIZE];
 
     //reset the hang counter
-    core.num_hangs[tid]=0;
+    core.num_hangs[tid] = 0;
 
     //open report file
     char report_fname[100];
-    sprintf(report_fname,"dev%d.cfg",tid); 
-    FILE *report = fopen(report_fname,"w");
+    sprintf(report_fname, "dev%d.cfg", tid);
+    FILE* report = fopen(report_fname, "w");
     NULL_CHK(report);
 
     while (1) {
@@ -114,26 +115,26 @@ void* node_handler(void* arg) {
 
         //print the message
         buffer[received] = '\0'; //null character before printing the string
-        fprintf(stderr, "[t%d(%s)::INFO] Recieved message '%s'.\n", tid, core.ip_list[tid],
-                buffer);
+        fprintf(stderr, "[t%d(%s)::INFO] Recieved message '%s'.\n", tid,
+                core.ip_list[tid], buffer);
 
-        if(strcmp(buffer,"done.")==0){
+        if (strcmp(buffer, "done.") == 0) {
             //write to report
-            fprintf(report,"%s\n",core.file_list[fidx]);
-        }
-        else if(strcmp(buffer,"crashed.")==0){
-            WARNING("%s terminated due to a signal. Please inspect the log.",core.file_list[fidx]);
+            fprintf(report, "%s\n", core.file_list[fidx]);
+        } else if (strcmp(buffer, "crashed.") == 0) {
+            WARNING("%s terminated due to a signal. Please inspect the log.",
+                    core.file_list[fidx]);
+            int32_t failed_cnt = core.failed_other_cnt;
+            core.failed_other_cnt++;
+            core.failed_other[failed_cnt] = fidx;
+        } else {
+            WARNING(
+                "%s exited with a non 0 exit status. Please inspect the log.",
+                core.file_list[fidx]);
             int32_t failed_cnt = core.failed_other_cnt;
             core.failed_other_cnt++;
             core.failed_other[failed_cnt] = fidx;
         }
-        else{
-            WARNING("%s exited with a non 0 exit status. Please inspect the log.",core.file_list[fidx]);
-            int32_t failed_cnt = core.failed_other_cnt;
-            core.failed_other_cnt++;
-            core.failed_other[failed_cnt] = fidx;            
-        }
-
 
         //close the connection
         TCP_client_disconnect(socketfd);
@@ -197,10 +198,11 @@ int main(int argc, char* argv[]) {
                   file_list_name, MAX_FILES);
             exit(EXIT_FAILURE);
         }
-        if (line[0] == '#' || line[0] == '\n' || line[0] == '\r') { //comments and emprty lines
+        if (line[0] == '#' || line[0] == '\n' ||
+            line[0] == '\r') { //comments and emprty lines
             free(line);
             continue;
-        }        
+        }
         if (line[readlinebytes - 1] == '\n' ||
             line[readlinebytes - 1] == '\r') {
             line[readlinebytes - 1] = '\0';
@@ -239,10 +241,11 @@ int main(int argc, char* argv[]) {
                   ip_list_name, MAX_IPS);
             exit(EXIT_FAILURE);
         }
-        if (line[0] == '#' || line[0] == '\n' || line[0] == '\r') { //comments and emprty lines
+        if (line[0] == '#' || line[0] == '\n' ||
+            line[0] == '\r') { //comments and emprty lines
             free(line);
             continue;
-        }              
+        }
         if (line[readlinebytes - 1] == '\n' ||
             line[readlinebytes - 1] == '\r') {
             line[readlinebytes - 1] = '\0';
@@ -280,34 +283,38 @@ int main(int argc, char* argv[]) {
             ERROR("Error joining thread %d", i);
             //exit(EXIT_FAILURE);
         }
-        if(core.num_hangs[i]>0){
-            INFO("Node %s disconnected/hanged %d times",core.ip_list[i],core.num_hangs[i]);
+        if (core.num_hangs[i] > 0) {
+            INFO("Node %s disconnected/hanged %d times", core.ip_list[i],
+                 core.num_hangs[i]);
         }
     }
 
-
     //failed files due to device hangs
-    if(core.failed_cnt>0){
-        FILE *failed_report = fopen("failed.cfg","w");
+    if (core.failed_cnt > 0) {
+        FILE* failed_report = fopen("failed.cfg", "w");
         NULL_CHK(failed_report);
-        fprintf(failed_report,"# Files that failed due to devices that consecutively hanged.");
+        fprintf(
+            failed_report,
+            "# Files that failed due to devices that consecutively hanged.");
         for (i = 0; i < core.failed_cnt; i++) {
             int id = core.failed[i];
             //ERROR("%s was skipped due to a device retire", core.file_list[id]);
-            fprintf(failed_report,"%s\n",core.file_list[id]);
+            fprintf(failed_report, "%s\n", core.file_list[id]);
         }
         fclose(failed_report);
     }
 
     //failed files due to sefaults or other non 0 exit status (see logs)
-    if(core.failed_other_cnt>0){
-        FILE *failed_report = fopen("failed_other.cfg","w");
+    if (core.failed_other_cnt > 0) {
+        FILE* failed_report = fopen("failed_other.cfg", "w");
         NULL_CHK(failed_report);
-        fprintf(failed_report,"# Files that failed with a software crash or exited with non 0 status. Please see the log for more info.");
+        fprintf(failed_report,
+                "# Files that failed with a software crash or exited with non "
+                "0 status. Please see the log for more info.");
         for (i = 0; i < core.failed_other_cnt; i++) {
             int id = core.failed_other[i];
             //WARNING("%s was skipped due to a software crash or a non 0 exit status. Please see the log for more info.", core.file_list[id]);
-            fprintf(failed_report,"%s\n",core.file_list[id]);
+            fprintf(failed_report, "%s\n", core.file_list[id]);
         }
         fclose(failed_report);
     }
@@ -316,4 +323,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-

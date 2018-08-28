@@ -63,19 +63,16 @@ int main(int argc, char* argv[]) {
         sprintf(command, "%s %s", SCRIPT, buffer);
         INFO("Command to be run %s.", command);
         int pid = system_async(command);
-        int status=wait_async(pid);
+        int status = wait_async(pid);
 
         //Copy a string to buffer
-        if(status==0){ //successful execution
+        if (status == 0) { //successful execution
             strcpy(buffer, "done.");
-        }
-        else if(status==-1){ //terminated due to signal
+        } else if (status == -1) { //terminated due to signal
             strcpy(buffer, "crashed.");
+        } else if (status > 0) {
+            sprintf(buffer, "failed with exit status %d.", status);
         }
-        else if(status>0){
-            sprintf(buffer, "failed with exit status %d.",status);
-        }
-        
 
         //send a message to the client
         send_full_msg(connectfd, buffer, strlen(buffer));
