@@ -23,3 +23,13 @@ clean:
 # Autoformat code with clang format
 format:
 	./scripts/autoformat.sh	
+
+test: all
+		./f5p_daemon &
+		./f5p_launch data/ip_localhost.cfg data/file_list.cfg
+		pkill f5p_daemon
+		
+rsync: all
+		make clean
+		rsync -rv . rock64@129.94.14.121:~/f5p
+		ssh rock64@129.94.14.121 'rsync -rv ~/f5p/* rock1:~/f5p'
