@@ -9,6 +9,7 @@ filepath=$1
 
 folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
 
+	exit_status=0
 
     #folder=${filepath%%.*}
     file=$(basename $filepath)
@@ -74,23 +75,23 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
     gunzip $FASTQGZLOCAL
         
     #index
-    /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit 2
+    /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit_status=1
 
     #minimap
-    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit 3
+    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit_status=1
 
 
     #sorting
-    /usr/bin/time -v $SAMTOOLS sort -@3 $SAMLOCAL > $BAMLOCAL 2>> $LOGLOCAL || exit 4
-    /usr/bin/time -v $SAMTOOLS index $BAMLOCAL 2>> $LOGLOCAL || exit 4
+    /usr/bin/time -v $SAMTOOLS sort -@3 $SAMLOCAL > $BAMLOCAL 2>> $LOGLOCAL || exit_status=1
+    /usr/bin/time -v $SAMTOOLS index $BAMLOCAL 2>> $LOGLOCAL || exit_status=1
 
     #methylation
-    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 4096 > $METHLOCAL  2>> $LOGLOCAL || exit 5   
+    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 4096 > $METHLOCAL  2>> $LOGLOCAL || exit_status=1   
 
 
-    cp $METHLOCAL $METH || exit 6
-    cp $BAMLOCAL $BAM || exit 6
-    cp $LOGLOCAL $LOG || exit 6
+    cp $METHLOCAL $METH
+    cp $BAMLOCAL $BAM
+    cp $LOGLOCAL $LOG
         
     #remove the rest    
     rm -rf $FAST5EXTRACT 
@@ -98,7 +99,7 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
     rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
     #rm -f $TMP"0.tmp"
  
-exit 0    
+exit $exit_status    
 
 
 
