@@ -2,7 +2,7 @@
 
 if [ "$#" -ne 1 ]; then
     echo "usage : $0 <filepath>"
-        exit 
+        exit 1
 fi
 
 filepath=$1
@@ -74,31 +74,31 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
     gunzip $FASTQGZLOCAL
         
     #index
-    /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL
+    /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit 2
 
     #minimap
-    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL
+    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit 3
 
 
     #sorting
-    /usr/bin/time -v $SAMTOOLS sort -@3 $SAMLOCAL > $BAMLOCAL 2>> $LOGLOCAL
-    /usr/bin/time -v $SAMTOOLS index $BAMLOCAL 2>> $LOGLOCAL
+    /usr/bin/time -v $SAMTOOLS sort -@3 $SAMLOCAL > $BAMLOCAL 2>> $LOGLOCAL || exit 4
+    /usr/bin/time -v $SAMTOOLS index $BAMLOCAL 2>> $LOGLOCAL || exit 4
 
     #methylation
-    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 4096 > $METHLOCAL  2>> $LOGLOCAL    
+    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 4096 > $METHLOCAL  2>> $LOGLOCAL || exit 5   
 
 
-    cp $METHLOCAL $METH
-    cp $BAMLOCAL $BAM
-    cp $LOGLOCAL $LOG
+    cp $METHLOCAL $METH || exit 6
+    cp $BAMLOCAL $BAM || exit 6
+    cp $LOGLOCAL $LOG || exit 6
         
     #remove the rest    
-    rm -rf $FAST5EXTRACT
+    rm -rf $FAST5EXTRACT 
     rm -f $FASTQLOCAL $FASTQLOCAL.index $FASTQLOCAL.index.fai $FASTQLOCAL.index.gzi $FASTQLOCAL.index.readdb 
     rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
     #rm -f $TMP"0.tmp"
  
-    
+exit 0    
 
 
 

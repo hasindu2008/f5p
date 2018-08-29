@@ -77,7 +77,7 @@ void* node_handler(void* arg) {
                 core.ip_list[tid], core.ip_list[tid]);
         int socketfd = TCP_client_connect(core.ip_list[tid], PORT);
 
-        fprintf(stderr, "[t%d()%s::INFO] Assigning %s to %s.\n", tid,
+        fprintf(stderr, "[t%d(%s)::INFO] Assigning %s to %s.\n", tid,
                 core.ip_list[tid], core.file_list[fidx], core.ip_list[tid]);
         send_full_msg(socketfd, core.file_list[fidx],
                       strlen(core.file_list[fidx]));
@@ -106,7 +106,7 @@ void* node_handler(void* arg) {
             fprintf(stderr, "[t%d(%s)::INFO] Connecting to %s\n", tid,
                     core.ip_list[tid], core.ip_list[tid]);
             socketfd = TCP_client_connect(core.ip_list[tid], PORT);
-            fprintf(stderr, "[t%d()%s::INFO] Assigning %s to %s\n", tid,
+            fprintf(stderr, "[t%d(%s)::INFO] Assigning %s to %s\n", tid,
                     core.ip_list[tid], core.file_list[fidx], core.ip_list[tid]);
             send_full_msg(socketfd, core.file_list[fidx],
                           strlen(core.file_list[fidx]));
