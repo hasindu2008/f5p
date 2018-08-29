@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <netinet/tcp.h>
 
 /*****************Internal Function prototypes that are not included in socket.h ***********************/
 
@@ -173,6 +174,29 @@ int TCP_client_connect(char* ip, int PORT) {
     //socket for connecting
     int socketfd = socket(AF_INET, SOCK_STREAM, 0);
     errorCheck(socketfd, "Cannot create socket.");
+
+    //tcpkeepalive activation (https://www.tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO/)
+    /* Set the option active */   
+    int optval = 1;
+    socklen_t optlen = sizeof(optval);
+    if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
+        WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");        
+    }
+    else{
+        //TCP_KEEPCNT: overrides tcp_keepalive_probes : the number of unacknowledged probes to send before considering the connection dead and notifying the application layer
+        //TCP_KEEPIDLE: overrides tcp_keepalive_time : the interval between the last data packet sent (simple ACKs are not considered data) and the first keepalive probe; after the connection is marked to need keepalive, this counter is not used any further
+        //TCP_KEEPINTVL: overrides  tcp_keepalive_intvl : the interval between subsequential keepalive probes, regardless of what the connection has exchanged in the meantime
+        optval=5;
+        int ret1=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPCNT, &optval, optlen);
+        optval=300;
+        int ret2=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPIDLE, &optval, optlen);
+        optval=60;
+        int ret3=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
+        if(ret1<0 || ret2<0 || ret3<0){
+            WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+        }
+                  
+    }
 
     //initializing the server address and assigning port numbers
     struct sockaddr_in server;

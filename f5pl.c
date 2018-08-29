@@ -43,6 +43,8 @@ typedef struct {
 
 node_global_args_t core; //remember that core is used throughout
 
+double realtime0 = 0;
+
 //thread function that handles each node
 void* node_handler(void* arg) {
     //thread index
@@ -122,14 +124,14 @@ void* node_handler(void* arg) {
             //write to report
             fprintf(report, "%s\n", core.file_list[fidx]);
         } else if (strcmp(buffer, "crashed.") == 0) {
-            WARNING("%s terminated due to a signal. Please inspect the log.",
+            fprintf(stderr,"[t%d(%s)::WARNING] \033[1;33m%s terminated due to a signal. Please inspect the device log.\033[0m\n",tid,core.ip_list[tid],
                     core.file_list[fidx]);
             int32_t failed_cnt = core.failed_other_cnt;
             core.failed_other_cnt++;
             core.failed_other[failed_cnt] = fidx;
         } else {
-            WARNING(
-                "%s exited with a non 0 exit status. Please inspect the log.",
+            fprintf(stderr,
+                "[t%d(%s)::WARNING] \033[1;33m%s exited with a non 0 exit status. Please inspect the device log.\033[0m\n",tid,core.ip_list[tid],
                 core.file_list[fidx]);
             int32_t failed_cnt = core.failed_other_cnt;
             core.failed_other_cnt++;
@@ -139,6 +141,9 @@ void* node_handler(void* arg) {
         //close the connection
         TCP_client_disconnect(socketfd);
     }
+    fprintf(stderr,
+                "[t%d(%s)::INFO] \033[1;34m Workload finished. Processed list: %s Elapsed time: %.3fh \033[0m\n",tid,core.ip_list[tid],report_fname,(realtime() - realtime0)/3600);
+
     fclose(report);
     pthread_exit(0);
 }
@@ -167,6 +172,8 @@ int main(int argc, char* argv[]) {
               argv[0]);
         exit(EXIT_FAILURE);
     }
+
+    realtime0=realtime();
 
     //read the list of tar files
     char** file_list = (char**)malloc(sizeof(char*) * (MAX_FILES));
@@ -293,6 +300,7 @@ int main(int argc, char* argv[]) {
     if (core.failed_cnt > 0) {
         FILE* failed_report = fopen("failed.cfg", "w");
         NULL_CHK(failed_report);
+        ERROR("List of failures due to consecutively device hangs in %s","failed.cfg");
         fprintf(
             failed_report,
             "# Files that failed due to devices that consecutively hanged.");
@@ -308,6 +316,7 @@ int main(int argc, char* argv[]) {
     if (core.failed_other_cnt > 0) {
         FILE* failed_report = fopen("failed_other.cfg", "w");
         NULL_CHK(failed_report);
+        ERROR("List of failures with non 0 exit stats in %s","failed_other.cfg");
         fprintf(failed_report,
                 "# Files that failed with a software crash or exited with non "
                 "0 status. Please see the log for more info.");
@@ -319,6 +328,7 @@ int main(int argc, char* argv[]) {
         fclose(failed_report);
     }
 
+    INFO("Everything done. Elapsed time: %.3fh",(realtime() - realtime0)/3600);
     //todo : free iplist and filelist
 
     return 0;
