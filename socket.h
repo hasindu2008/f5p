@@ -61,5 +61,8 @@ void TCP_server_shutdown(int listenfd);
 */
 int TCP_client_connect(char* ip, int PORT);
 
+//similar to TCP_client_connect, but give up after 'times' number of times
+int TCP_client_connect_try(char* ip, int PORT, int times);
+
 /* Disconnect*/
 void TCP_client_disconnect(int socketfd);

@@ -20,7 +20,7 @@ void send_all(int socket, void* buffer, long length);
 /*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
 void recv_all(int socket, void* buffer, long length);
 
-//receive all but try olly times before giving up
+//receive all but try only number of 'times' before giving up
 int recv_all_try(int socket, void* buffer, long length, int times);
 
 //some macros
@@ -220,6 +220,64 @@ int TCP_client_connect(char* ip, int PORT) {
     return socketfd;
 }
 
+
+/* Connect to a TCP server at PORT at ip, but give up after 'times' number of times*/
+int TCP_client_connect_try(char* ip, int PORT, int times) {
+    //socket for connecting
+    int socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    errorCheck(socketfd, "Cannot create socket.");
+
+    //tcp keepalive activation (https://www.tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO/)
+    /* Set the option active */   
+    int optval = 1;
+    socklen_t optlen = sizeof(optval);
+    if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
+        WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");        
+    }
+    else{
+        //TCP_KEEPCNT: overrides tcp_keepalive_probes : the number of unacknowledged probes to send before considering the connection dead and notifying the application layer
+        //TCP_KEEPIDLE: overrides tcp_keepalive_time : the interval between the last data packet sent (simple ACKs are not considered data) and the first keepalive probe; after the connection is marked to need keepalive, this counter is not used any further
+        //TCP_KEEPINTVL: overrides  tcp_keepalive_intvl : the interval between subsequential keepalive probes, regardless of what the connection has exchanged in the meantime
+        optval=5;
+        int ret1=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPCNT, &optval, optlen);
+        optval=300;
+        int ret2=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPIDLE, &optval, optlen);
+        optval=60;
+        int ret3=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
+        if(ret1<0 || ret2<0 || ret3<0){
+            WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+        }
+                  
+    }
+
+    //initializing the server address and assigning port numbers
+    struct sockaddr_in server;
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr(ip);
+    server.sin_port = htons(PORT);
+
+    //connecting. The following (comment) tries ones and giveup
+    //int ret=connect(socketfd,(struct sockaddr *)&server, sizeof(server));
+
+    //try connecting until successful. this is better than trying once and giving up
+    int ret = -1;
+    int counter = 0;
+    while (ret == -1) {
+        ret = connect(socketfd, (struct sockaddr*)&server, sizeof(server));
+        counter++;
+        if (counter >= times) {
+            return -1;
+        }
+		INFO("Connected attempt to %s failed. Trying again.", ip);		
+        sleep(1);
+    }
+
+    errorCheck(ret, "Cannot connect.");
+    INFO("Connected to server %s.", ip);
+
+    return socketfd;
+}
+
 /* Disconnect*/
 void TCP_client_disconnect(int socketfd) {
     //closing sockets
@@ -282,7 +340,7 @@ int recv_all_try(int socket, void* buffer, long length, int times) {
             WARNING("%s", "Could not receive all data. Trying again.");
             sleep(1);
             counter++;
-            if (counter > times) {
+            if (counter >= times) {
                 ERROR("%s", "Socket is probably broken. Giving up.");
                 return -1;
             }

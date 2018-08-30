@@ -21,6 +21,10 @@
 #define PORT 20022
 //maximum number of censecutive failues before retiring a node
 #define MAX_CONSECUTIVE_FAILURES 3
+//number of seconds to try again once a failed receive occur 
+#define RECEIVE_TIME_OUT 5
+//number of times to attempt connecting before declaring the node as dead. In linux one try is around 20s
+#define CONNECT_TIME_OUT 30
 
 //lock for accessing the list of tar files
 pthread_mutex_t file_list_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -77,15 +81,26 @@ void* node_handler(void* arg) {
 
         fprintf(stderr, "[t%d(%s)::INFO] Connecting to %s.\n", tid,
                 core.ip_list[tid], core.ip_list[tid]);
-        int socketfd = TCP_client_connect(core.ip_list[tid], PORT);
+        int socketfd = TCP_client_connect_try(core.ip_list[tid], PORT,CONNECT_TIME_OUT);
+        if(socketfd==-1){
+            fprintf(stderr,
+                        "[t%d(%s)::WARNING]\033[1;33m Connection initiation to device %s failed. Giving up hope on the device.\033[0m\n",
+                        tid, core.ip_list[tid], core.ip_list[tid]);  
+            pthread_mutex_lock(&file_list_mutex); //todo : this can be a different lock for efficiency
+            int32_t failed_cnt = core.failed_cnt;
+            core.failed_cnt++;
+            core.failed[failed_cnt] = fidx;
+            pthread_mutex_unlock(&file_list_mutex);  
+            break;         
+        }
 
-        fprintf(stderr, "[t%d(%s)::INFO] Assigning %s to %s.\n", tid,
-                core.ip_list[tid], core.file_list[fidx], core.ip_list[tid]);
+        fprintf(stderr, "[t%d(%s)::INFO] Assigning %s (%d of %d) to %s.\n", tid,
+                core.ip_list[tid], core.file_list[fidx], fidx+1 , core.file_list_cnt, core.ip_list[tid]);
         send_full_msg(socketfd, core.file_list[fidx],
                       strlen(core.file_list[fidx]));
 
         //receive the ''done' message (will block until done)
-        int received = recv_full_msg_try(socketfd, buffer, MAX_PATH_SIZE, 5);
+        int received = recv_full_msg_try(socketfd, buffer, MAX_PATH_SIZE, RECEIVE_TIME_OUT);
 
         //handle incase the socket has broken
         int32_t count = 0;
@@ -95,24 +110,40 @@ void* node_handler(void* arg) {
             fprintf(stderr,
                         "[t%d(%s)::WARNING]\033[1;33m Device %s has hung/disconnected. \033[0m\n",
                         tid, core.ip_list[tid], core.ip_list[tid]);            
-            if (count >= MAX_CONSECUTIVE_FAILURES) {
+            if (count >= MAX_CONSECUTIVE_FAILURES) { //if the device failed so many times
                 fprintf(stderr,
                         "[t%d(%s)::ERROR]\033[1;31m Device %s failed %d times "
                         "consecutively. Retiring the device. \033[0m\n",
                         tid, core.ip_list[tid], core.ip_list[tid], count);
-                pthread_mutex_lock(&file_list_mutex);
+                pthread_mutex_lock(&file_list_mutex); //todo : this can be a different lock for efficiency
                 int32_t failed_cnt = core.failed_cnt;
                 core.failed_cnt++;
                 core.failed[failed_cnt] = fidx;
                 pthread_mutex_unlock(&file_list_mutex);
                 fclose(report);
+                fprintf(stderr,
+                "[t%d(%s)::INFO] \033[1;34m Processed list: %s Elapsed time: %.3fh \033[0m\n",tid,core.ip_list[tid],report_fname,(realtime() - realtime0)/3600);
                 pthread_exit(0);
             }
             fprintf(stderr, "[t%d(%s)::INFO] Connecting to %s\n", tid,
                     core.ip_list[tid], core.ip_list[tid]);
-            socketfd = TCP_client_connect(core.ip_list[tid], PORT);
-            fprintf(stderr, "[t%d(%s)::INFO] Assigning %s to %s\n", tid,
-                    core.ip_list[tid], core.file_list[fidx], core.ip_list[tid]);
+            socketfd = TCP_client_connect_try(core.ip_list[tid], PORT,CONNECT_TIME_OUT);
+            if(socketfd==-1){ //complete device hang detection
+                fprintf(stderr,
+                            "[t%d(%s)::WARNING]\033[1;33m Connection initiation to device %s failed. Giving up hope on the device.\033[0m\n",
+                            tid, core.ip_list[tid], core.ip_list[tid]);  
+                pthread_mutex_lock(&file_list_mutex); //todo : this can be a different lock for efficiency
+                int32_t failed_cnt = core.failed_cnt;
+                core.failed_cnt++;
+                core.failed[failed_cnt] = fidx;
+                pthread_mutex_unlock(&file_list_mutex);  
+                fclose(report);
+                 fprintf(stderr,
+                "[t%d(%s)::INFO] \033[1;34m Processed list: %s Elapsed time: %.3fh \033[0m\n",tid,core.ip_list[tid],report_fname,(realtime() - realtime0)/3600);
+                pthread_exit(0);        
+            }            
+            fprintf(stderr, "[t%d(%s)::INFO] Assigning %s (%d of %d) to %s\n", tid,
+                    core.ip_list[tid], core.file_list[fidx],  fidx+1 , core.file_list_cnt, core.ip_list[tid]);
             send_full_msg(socketfd, core.file_list[fidx],
                           strlen(core.file_list[fidx]));
             received = recv_full_msg_try(socketfd, buffer, MAX_PATH_SIZE, 5);
@@ -145,7 +176,7 @@ void* node_handler(void* arg) {
         TCP_client_disconnect(socketfd);
     }
     fprintf(stderr,
-                "[t%d(%s)::INFO] \033[1;34m Workload finished. Processed list: %s Elapsed time: %.3fh \033[0m\n",tid,core.ip_list[tid],report_fname,(realtime() - realtime0)/3600);
+                "[t%d(%s)::INFO] \033[1;34m Processed list: %s Elapsed time: %.3fh \033[0m\n",tid,core.ip_list[tid],report_fname,(realtime() - realtime0)/3600);
 
     fclose(report);
     pthread_exit(0);
