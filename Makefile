@@ -31,5 +31,5 @@ test: all
 		
 rsync: all
 		make clean
-		rsync -rv . rock64@129.94.14.121:~/f5p
-		ssh rock64@129.94.14.121 'rsync -rv ~/f5p/* rock1:~/f5p'
+		rsync -rv --delete . rock64@129.94.14.121:~/f5p
+		ssh rock64@129.94.14.121 'rsync -rv --delete ~/f5p/* rock1:~/f5p'

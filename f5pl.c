@@ -58,7 +58,7 @@ void* node_handler(void* arg) {
 
     //open report file
     char report_fname[100];
-    sprintf(report_fname, "dev%d.cfg", tid);
+    sprintf(report_fname, "dev%d.cfg", tid+1);
     FILE* report = fopen(report_fname, "w");
     NULL_CHK(report);
 
@@ -92,6 +92,9 @@ void* node_handler(void* arg) {
         while (received < 0) {
             count++;
             core.num_hangs[tid]++;
+            fprintf(stderr,
+                        "[t%d(%s)::WARNING]\033[1;33m Device %s has hung/disconnected. \033[0m\n",
+                        tid, core.ip_list[tid], core.ip_list[tid]);            
             if (count >= MAX_CONSECUTIVE_FAILURES) {
                 fprintf(stderr,
                         "[t%d(%s)::ERROR]\033[1;31m Device %s failed %d times "
@@ -124,7 +127,7 @@ void* node_handler(void* arg) {
             //write to report
             fprintf(report, "%s\n", core.file_list[fidx]);
         } else if (strcmp(buffer, "crashed.") == 0) {
-            fprintf(stderr,"[t%d(%s)::WARNING] \033[1;33m%s terminated due to a signal. Please inspect the device log.\033[0m\n",tid,core.ip_list[tid],
+            fprintf(stderr,"[t%d(%s)::WARNING]\033[1;33m %s terminated due to a signal. Please inspect the device log.\033[0m\n",tid,core.ip_list[tid],
                     core.file_list[fidx]);
             int32_t failed_cnt = core.failed_other_cnt;
             core.failed_other_cnt++;

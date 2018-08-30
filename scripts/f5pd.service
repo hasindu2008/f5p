@@ -1,12 +1,12 @@
 [Unit]
-Description=f5p_daemon
+Description=f5pd
 After=network.target
 
 [Service]
 Restart=always
 RestartSec=20
 User=rock64
-ExecStart=/nanopore/bin/f5p_daemon
+ExecStart=/nanopore/bin/f5pd
 
 [Install]
 WantedBy=multi-user.target
