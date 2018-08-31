@@ -23,8 +23,8 @@
 #define MAX_CONSECUTIVE_FAILURES 3
 //number of seconds to try again once a failed receive occur 
 #define RECEIVE_TIME_OUT 5
-//number of times to attempt connecting before declaring the node as dead. In linux one try is around 20s
-#define CONNECT_TIME_OUT 30
+//number of times to attempt connecting before declaring the node as dead. In linux one try is around 3s
+#define CONNECT_TIME_OUT 200
 
 //lock for accessing the list of tar files
 pthread_mutex_t file_list_mutex = PTHREAD_MUTEX_INITIALIZER;

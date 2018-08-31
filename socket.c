@@ -268,7 +268,7 @@ int TCP_client_connect_try(char* ip, int PORT, int times) {
         if (counter >= times) {
             return -1;
         }
-		INFO("Connected attempt to %s failed. Trying again.", ip);		
+		INFO("Connection attempt to %s failed. Trying again.", ip);		
         sleep(1);
     }
 
