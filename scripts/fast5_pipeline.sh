@@ -42,7 +42,7 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
 
 
 
-    MINIMAP=/nanopore/bin/minimap2
+    MINIMAP=/nanopore/bin/minimap2-arm
     NANOPOLISH=/nanopore/bin/nanopolish
     SAMTOOLS=/nanopore/bin/samtools
 
@@ -78,7 +78,7 @@ folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
     /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit_status=1
 
     #minimap
-    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --split-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit_status=1
+    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --multi-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit_status=1
 
 
     #sorting

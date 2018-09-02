@@ -67,7 +67,7 @@ autom4te.cache
 /tmp/
 /htslib
 /hdf5
-/data/logs
+/data/logs/*
 /f5pl
 /f5pd
 /f5pl_test
