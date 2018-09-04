@@ -10,7 +10,7 @@
 #include <netinet/tcp.h>
 
 //verbosity
-int verbose_socklibc = 1; 1//special-recommended //2 errors, //3 warnings //4 info
+int verbose_socklibc = 1; //1 special-recommended //2 errors, //3 warnings //4 info
 
 /*****************Internal Function prototypes that are not included in socket.h ***********************/
 
