@@ -151,7 +151,7 @@ void* node_handler(void* arg) {
 
         //print the message
         buffer[received] = '\0'; //null character before printing the string
-        fprintf(stderr, "[t%d(%s)::INFO] Recieved message '%s'.\n", tid,
+        fprintf(stderr, "[t%d(%s)::INFO] Received message '%s'.\n", tid,
                 core.ip_list[tid], buffer);
 
         if (strcmp(buffer, "done.") == 0) {
@@ -337,7 +337,7 @@ int main(int argc, char* argv[]) {
         ERROR("List of failures due to consecutively device hangs in %s","failed.cfg");
         fprintf(
             failed_report,
-            "# Files that failed due to devices that consecutively hanged.");
+            "# Files that failed due to devices that consecutively hanged.\n");
         for (i = 0; i < core.failed_cnt; i++) {
             int id = core.failed[i];
             //ERROR("%s was skipped due to a device retire", core.file_list[id]);
@@ -353,7 +353,7 @@ int main(int argc, char* argv[]) {
         ERROR("List of failures with non 0 exit stats in %s","failed_other.cfg");
         fprintf(failed_report,
                 "# Files that failed with a software crash or exited with non "
-                "0 status. Please see the log for more info.");
+                "0 status. Please inspect the device log for more info.\n");
         for (i = 0; i < core.failed_other_cnt; i++) {
             int id = core.failed_other[i];
             //WARNING("%s was skipped due to a software crash or a non 0 exit status. Please see the log for more info.", core.file_list[id]);

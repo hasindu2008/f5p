@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
+//verbosity
+int verbose_socklibc = 0; //special-recommended //2 errors, //3 warnings //4 info
+
 /*****************Internal Function prototypes that are not included in socket.h ***********************/
 
 /*Die on error. Print the error and exit if the return value of the previous function is -1*/
@@ -46,8 +49,10 @@ long recv_full_msg(int socket, void* buffer, long length) {
     long expected_length = 0;
     recv_all(socket, &expected_length, sizeof(long));
 
-    INFO("Receiving a message of size %ld.", expected_length);
-
+	if(verbose_socklibc>=4){	
+		INFO("Receiving a message of size %ld.", expected_length);
+	}
+	
     if (expected_length > length) {
         WARNING("Buffer of size %ld is too small to fit expected data.",
                 expected_length);
@@ -64,9 +69,11 @@ long recv_full_msg_try(int socket, void* buffer, long length, int times) {
         return ret;
     }
 
-    INFO("Receiving a message of size %ld.", expected_length);
-
-    if (expected_length > length) {
+	if(verbose_socklibc>=4){
+		INFO("Receiving a message of size %ld.", expected_length);
+	}
+	
+    if (expected_length > length && verbose_socklibc>=1) {
         WARNING("Buffer of size %ld is too small to fit expected data.",
                 expected_length);
     }
@@ -100,7 +107,7 @@ int TCP_server_init(int PORT) {
     //for few minutes after the program that previously used the port exists
     int enable = 1;
     if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) <
-        0) {
+        0 && verbose_socklibc>=1) {
         WARNING("%s", "setsockopt(SO_REUSEADDR) failed");
     }
 
@@ -109,9 +116,12 @@ int TCP_server_init(int PORT) {
     while (ret == -1) {
         ret = bind(listenfd, (struct sockaddr*)&server, sizeof(server));
         if (ret == -1) {
-            WARNING(
+            
+			if(verbose_socklibc>=1){
+				WARNING(
                 "%s",
-                "Cannot bind to address as it is already used. Trying agin.");
+                "Cannot bind to address as it is already used. Trying again.");
+			}
             sleep(1);
         }
     }
@@ -123,12 +133,16 @@ int TCP_server_init(int PORT) {
     //ret=bind(listenfd,(struct sockaddr *)&server, sizeof(server));
 
     errorCheck(ret, "Cannot bind");
-    INFO("Binding successfull to port %d.", PORT);
+    if(verbose_socklibc>=4){
+		INFO("Binding successfull to port %d.", PORT);
+	}
 
     //now listen
     ret = listen(listenfd, 5);
     errorCheck(ret, "Cannot listen");
-    INFO("Listening on port %d.", PORT);
+	if(verbose_socklibc>=4){
+		INFO("Listening on port %d.", PORT);
+	}
 
     return listenfd;
 }
@@ -147,7 +161,9 @@ int TCP_server_accept_client(int listenfd) {
     //get ip to string
     char ip[16];
     inet_ntop(AF_INET, &client.sin_addr, ip, clientlen);
-    INFO("Client %s:%d connected.", ip, client.sin_port);
+	if(verbose_socklibc>=4){
+		INFO("Client %s:%d connected.", ip, client.sin_port);
+	}
 
     return connectfd;
 }
@@ -157,7 +173,9 @@ void TCP_server_disconnect_client(int connectfd) {
     //close sockets
     int ret = close(connectfd);
     errorCheck(ret, "Cannot close socket.");
-    INFO("%s", "Client disconnected.");
+    if(verbose_socklibc>=4){
+		INFO("%s", "Client disconnected.");
+	}
 }
 
 /*Close down the listening socket*/
@@ -179,8 +197,10 @@ int TCP_client_connect(char* ip, int PORT) {
     /* Set the option active */   
     int optval = 1;
     socklen_t optlen = sizeof(optval);
-    if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
-        WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");        
+    if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0 ) {
+        if(verbose_socklibc>=1) {
+			WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");    
+		}
     }
     else{
         //TCP_KEEPCNT: overrides tcp_keepalive_probes : the number of unacknowledged probes to send before considering the connection dead and notifying the application layer
@@ -193,7 +213,9 @@ int TCP_client_connect(char* ip, int PORT) {
         optval=60;
         int ret3=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
         if(ret1<0 || ret2<0 || ret3<0){
-            WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+            if(verbose_socklibc>=1){
+				WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+			}
         }
                   
     }
@@ -215,7 +237,9 @@ int TCP_client_connect(char* ip, int PORT) {
     }
 
     errorCheck(ret, "Cannot connect.");
-    INFO("Connected to server %s.", ip);
+    if(verbose_socklibc>=4){
+		INFO("Connected to server %s.", ip);
+	}
 
     return socketfd;
 }
@@ -232,7 +256,7 @@ int TCP_client_connect_try(char* ip, int PORT, int times) {
     int optval = 1;
     socklen_t optlen = sizeof(optval);
     if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
-        WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");        
+        if(verbose_socklibc>=1) WARNING("%s","Could not enable tcp keepalive. Dead host detection will not work.");        
     }
     else{
         //TCP_KEEPCNT: overrides tcp_keepalive_probes : the number of unacknowledged probes to send before considering the connection dead and notifying the application layer
@@ -245,7 +269,9 @@ int TCP_client_connect_try(char* ip, int PORT, int times) {
         optval=60;
         int ret3=setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
         if(ret1<0 || ret2<0 || ret3<0){
-            WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+			if(verbose_socklibc>=1){
+				WARNING("%s","Could not set tcp keepalive parameters. Dead host detection may not work.");
+			}
         }
                   
     }
@@ -268,12 +294,16 @@ int TCP_client_connect_try(char* ip, int PORT, int times) {
         if (counter >= times) {
             return -1;
         }
-		INFO("Connection attempt to %s failed. Trying again.", ip);		
+		if(verbose_socklibc>=4){	
+			INFO("Connection attempt to %s failed. Trying again.", ip);		
+		}
         sleep(1);
     }
 
     errorCheck(ret, "Cannot connect.");
-    INFO("Connected to server %s.", ip);
+    if(verbose_socklibc>=4){
+		INFO("Connected to server %s.", ip);
+	}
 
     return socketfd;
 }
@@ -292,7 +322,9 @@ void TCP_client_disconnect(int socketfd) {
 /*Die on error. Print the error and exit if the return value of the previous function is -1*/
 void errorCheck(int ret, char* msg) {
     if (ret == -1) {
-        perror(msg);
+        if(verbose_socklibc>=1){
+			perror(msg);
+		}
         exit(EXIT_FAILURE);
     }
 }
@@ -304,7 +336,9 @@ void send_all(int socket, void* buffer, long length) {
     while (length > 0) {
         i = send(socket, ptr, length, 0);
         if (i < 1) {
-            WARNING("%s", "Could not send all data. Trying again.");
+            if(verbose_socklibc>=1) {
+				WARNING("%s", "Could not send all data. Trying again.");
+			}
             sleep(1);
         }
         ptr += i;
@@ -320,7 +354,9 @@ void recv_all(int socket, void* buffer, long length) {
     while (length > 0) {
         i = recv(socket, ptr, length, 0);
         if (i < 1) {
-            WARNING("%s", "Could not receive all data. Trying again.");
+			if(verbose_socklibc>=1){
+				WARNING("%s", "Could not receive all data. Trying again.");
+			}
             sleep(1);
         }
         ptr += i;
@@ -337,11 +373,15 @@ int recv_all_try(int socket, void* buffer, long length, int times) {
     while (length > 0) {
         i = recv(socket, ptr, length, 0);
         if (i < 1) {
-            WARNING("%s", "Could not receive all data. Trying again.");
+			if(verbose_socklibc>=3){
+				WARNING("%s", "Could not receive all data. Trying again.");
+			}
             sleep(1);
             counter++;
             if (counter >= times) {
-                ERROR("%s", "Socket is probably broken. Giving up.");
+				if(verbose_socklibc>=2){
+					ERROR("%s", "Socket is probably broken. Giving up.");
+				}
                 return -1;
             }
         }
