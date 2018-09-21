@@ -7,7 +7,10 @@ fi
 
 filepath=$1
 
-folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
+folderf5=${filepath%/*}
+folder=${folderf5%/*}
+ 
+#folder=/mnt/778/778-5000ng/778-5000ng_albacore-2.1.3
 
 	exit_status=0
 

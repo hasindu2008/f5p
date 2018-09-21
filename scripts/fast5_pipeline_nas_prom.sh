@@ -19,8 +19,9 @@ folder=${folderf5%/*}
     prefix=${file%%.*}    
     
     FAST5TAR=$filepath
-    FASTQGZ="$folder/fastq/*"$prefix".fastq.gz"
-    FASTQGZ=$(ls $FASTQGZ)
+    #FASTQGZ="$folder/fastq/*"$prefix".fastq.gz"
+    #FASTQGZ=$(ls $FASTQGZ)
+	FASTQ="$folder/fastq/fastq_$prefix.fastq"
 	#SAM="$folder/sam/"$prefix".sam"
 	BAM="$folder/bam/$prefix.bam"
 	METH="$folder/methylation/$prefix.tsv"
@@ -57,7 +58,7 @@ folder=${folderf5%/*}
 
     FAST5TARLOCAL=$SCRATCH/$prefix.fast5.tar
     FAST5EXTRACT=$SCRATCH/$prefix
-    FASTQGZLOCAL=$SCRATCH/$prefix.fastq.gz
+    #FASTQGZLOCAL=$SCRATCH/$prefix.fastq.gz
     FASTQLOCAL=$SCRATCH/$prefix.fastq
     SAMLOCAL=$SCRATCH/$prefix.sam
     BAMLOCAL=$SCRATCH/$prefix.bam
@@ -70,11 +71,11 @@ folder=${folderf5%/*}
     mkdir $FAST5EXTRACT
     tar xf $FAST5TAR -C $FAST5EXTRACT 
 
-        
+    cp $FASTQ $FASTQLOCAL
     #copy and uncompress fastq
-    cp $FASTQGZ $FASTQGZLOCAL
-	test -e $FASTQLOCAL && rm $FASTQLOCAL
-    gunzip $FASTQGZLOCAL
+    #cp $FASTQGZ $FASTQGZLOCAL
+	#test -e $FASTQLOCAL && rm $FASTQLOCAL
+    #gunzip $FASTQGZLOCAL
         
     #index
     /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit_status=1
@@ -91,14 +92,14 @@ folder=${folderf5%/*}
     /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 4096 > $METHLOCAL  2>> $LOGLOCAL || exit_status=1   
 
 
-    #cp $METHLOCAL $METH
-    #cp $BAMLOCAL $BAM
+    cp $METHLOCAL $METH
+    cp $BAMLOCAL $BAM
     cp $LOGLOCAL $LOG
         
     #remove the rest    
     rm -rf $FAST5EXTRACT 
     rm -f $FASTQLOCAL $FASTQLOCAL.index $FASTQLOCAL.index.fai $FASTQLOCAL.index.gzi $FASTQLOCAL.index.readdb 
-    #rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
+    rm -f $SAMLOCAL $BAMLOCAL $BAMLOCAL.bai $METHLOCAL
     #rm -f $TMP"0.tmp"
  
 exit $exit_status    
