@@ -22,7 +22,7 @@ ansible all -m copy -a "src=scripts/fast5_pipeline_nas.sh dest=/nanopore/bin/fas
 /usr/bin/time -v ./f5pl data/ip_list.cfg data/dev.cfg 2>&1 | tee log.txt
 ansible all -m shell -a "cd /nanopore/scratch && tar zcvf logs.tgz *.log"
 gather.sh /nanopore/scratch/logs.tgz data/logs/log tgz
-mv log.txt data/logs/
+cp log.txt data/logs/
 mv *.cfg data/logs/
 cp $0 data/logs/
 cp scripts/fast5_pipeline_nas.sh data/logs/
