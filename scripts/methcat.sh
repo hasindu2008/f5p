@@ -19,7 +19,7 @@ tail -n +2 -q $meth_tsv_dir/*.tsv >> $output
 
 scp $output dice:/home/hasgam/scratch/tmp/$prefix_output
 
-ssh dice "'" "qsub -cwd -N meth_freq -V -S /bin/bash -pe smp 1 -l mem_requested=64G ~/scripts/meth_freq.sh $prefix_output $prefix_freq" "'"
+ssh dice "'" "qsub -cwd -N meth_freq -V -S /bin/bash -pe smp 1 -l mem_requested=64G,tmp_requested=100G,fast_dm=10 ~/scripts/meth_freq.sh $prefix_output $prefix_freq" "'"
 
 # NANOPOLISH_FSCRIPT=/home/hasgam/hasindu2008.git/nanopolish/scripts/calculate_methylation_frequency.py
 

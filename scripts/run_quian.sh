@@ -16,7 +16,8 @@ cleanscratch.sh
 test -d data/logs && rm -r data/logs
 mkdir data/logs || exit 1
 
-FOLDER=/scratch_nas/qian/LXBAB136902/LXBAB136902/2-E3-H3/
+#FOLDER=/scratch_nas/qian/LXBAB136902/LXBAB136902/2-E3-H3/
+FOLDER=/mnt/kyle01/Projects/2018/November/LXBAB138035/
 FAST5FOLDER=$FOLDER/reads
 PIPELINE_SCRIPT="scripts/fast5_pipeline_quain.sh"
 
@@ -36,5 +37,6 @@ cp log.txt data/logs/
 mv *.cfg data/logs/
 cp $0 data/logs/
 cp $PIPELINE_SCRIPT data/logs/
+scripts/failed_device_logs.sh
 cp -r data $FOLDER/f5pmaster
 
