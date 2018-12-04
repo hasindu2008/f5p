@@ -81,7 +81,7 @@ folder=${folderf5%/*}
     /usr/bin/time -v $NANOPOLISH index -d $FAST5EXTRACT $FASTQLOCAL 2> $LOGLOCAL || exit_status=1
 
     #minimap
-    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K20M --secondary=no  --multi-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit_status=1
+    /usr/bin/time -v $MINIMAP -x map-ont -a -t4 -K5M --secondary=no  --multi-prefix=$TMP $REFIDX $FASTQLOCAL > $SAMLOCAL 2>> $LOGLOCAL || exit_status=1
 
 
     #sorting
@@ -89,12 +89,12 @@ folder=${folderf5%/*}
     /usr/bin/time -v $SAMTOOLS index $BAMLOCAL 2>> $LOGLOCAL || exit_status=1
 
     #methylation
-    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 1024 > $METHLOCAL  2>> $LOGLOCAL || exit_status=1   
+    /usr/bin/time -v $NANOPOLISH call-methylation -t 4 -r  $FASTQLOCAL -g $REF -b $BAMLOCAL -K 256 > $METHLOCAL  2>> $LOGLOCAL || exit_status=1   
 
 
-    mv $METHLOCAL $METH
-    mv $SAMLOCAL $SAM
-    mv $BAMLOCAL $BAM
+    cp $METHLOCAL $METH
+    cp $SAMLOCAL $SAM
+    cp $BAMLOCAL $BAM
     cp $LOGLOCAL $LOG
         
     #remove the rest    
