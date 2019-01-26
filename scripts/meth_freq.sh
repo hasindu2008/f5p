@@ -7,7 +7,7 @@ scl enable devtoolset-2 bash
 
 
 if [ "$#" -ne 2 ]; then
-    echo "usage : $0 <input_tsv> <output_freq.tsv>"
+    echo "usage : $0 <kyle:~/input_tsv> <kyle:~/output_freq.tsv>"
         exit 1
 fi
 

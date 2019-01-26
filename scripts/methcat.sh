@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 2 ]; then
-    echo "usage : $0 <meth_tsv_dir> <freq.tsv>"
+    echo "usage : $0 <kyle:~/meth_tsv_dir> <kyle:~/freq.tsv>"
         exit 1
 fi
 
