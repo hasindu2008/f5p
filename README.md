@@ -53,4 +53,4 @@ ansible all -m copy -a "src=./f5pd dest=/nanopore/bin/f5pd mode=0755"
 ./f5pl data/ip_list.cfg data/file_list.cfg
 ```
 
-  You may adapt the script [scripts/run_local.sh](https://github.com/hasindu2008/f5_pipeline/blob/master/scripts/run_local.sh) which performs a run discussed above.
+  You may adapt the script [scripts/run.sh](https://github.com/hasindu2008/f5_pipeline/blob/master/scripts/run.sh) which performs a run discussed above.
