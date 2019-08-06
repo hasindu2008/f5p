@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "f5pmisc.h": "c",
-        "socket.h": "c",
-        "errno.h": "c"
-    }
-}
