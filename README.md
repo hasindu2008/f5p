@@ -1,4 +1,4 @@
-# f5_pipeline
+# f5p
 
 Lightweight job scheduler and daemon for nanopore data processing on a mini-cluster
 
