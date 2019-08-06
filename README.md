@@ -45,7 +45,7 @@ ansible all -m copy -a "src=./f5pd dest=/nanopore/bin/f5pd mode=0755"
   Note that this scripts should exit with a non zero status if any thing went wrong. After modifying the script, copy it to the *worker nodes* to the location `/nanopore/bin/fast5_pipeline.sh`
 
 
-2. On the *head node* create a file containing the list of tar files (each tar file contains a fast5 batch), one tar file per line. An example is in [data/file_list.cfg](https://github.com/hasindu2008/f5_pipeline/blob/master/data/file_list.cfg). You may use
+2. On the *head node* create a file containing the list of tar files (each tar file contains a fast5 batch), one tar file per line. An example is in [data/file_list.cfg](https://github.com/hasindu2008/f5_pipeline/blob/master/data/file_list.cfg).
 
 3. Launch the *f5pl* with the IP list and the tar file list you previously created as the arguments.
 
