@@ -25,11 +25,11 @@ format:
 	./scripts/autoformat.sh	
 
 test: all
-		./f5pd &
-		./f5pl data/ip_localhost.cfg data/file_list.cfg
-		pkill f5pd
+	./f5pd &
+	./f5pl data/ip_localhost.cfg data/file_list.cfg
+	pkill f5pd
 		
 rsync: all
-		make clean
-		rsync -rv --delete . rock64@129.94.14.121:~/f5p
-		ssh rock64@129.94.14.121 'rsync -rv --delete ~/f5p/* rock1:~/f5p'
+	make clean
+	rsync -rv --delete . rock64@129.94.14.121:~/f5p
+	ssh rock64@129.94.14.121 'rsync -rv --delete ~/f5p/* rock1:~/f5p'

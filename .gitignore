@@ -72,3 +72,4 @@ autom4te.cache
 /f5pd
 /f5pl_test
 /*.cfg
+.vscode
