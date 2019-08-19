@@ -63,6 +63,7 @@ typedef struct {
     int32_t file_list_idx; //the current index for file_list
     int32_t file_list_cnt; //the number of filled entires in file_list
     char** ip_list;        //the list of IP addresses
+    int* port_list;        //the list of ports 
     int32_t failed
         [MAX_FILES]; //the indices (of file_list) for completely failed tar files due to device hangs (todo : malloc later)
     int32_t failed_cnt; //the number of such failures
@@ -109,7 +110,7 @@ void* node_handler(void* arg) {
 
         fprintf(stderr, "[t%d(%s)::INFO] Connecting to %s.\n", tid,
                 core.ip_list[tid], core.ip_list[tid]);
-        int socketfd = TCP_client_connect_try(core.ip_list[tid], PORT,CONNECT_TIME_OUT);
+        int socketfd = TCP_client_connect_try(core.ip_list[tid], core.port_list[tid], CONNECT_TIME_OUT);
         if(socketfd==-1){
             fprintf(stderr,
                         "[t%d(%s)::WARNING]\033[1;33m Connection initiation to device %s failed. Giving up hope on the device.\033[0m\n",
@@ -268,7 +269,7 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
         }
         if (line[0] == '#' || line[0] == '\n' ||
-            line[0] == '\r') { //comments and emprty lines
+            line[0] == '\r') { //comments and empty lines
             free(line);
             continue;
         }
@@ -284,10 +285,13 @@ int main(int argc, char* argv[]) {
     //read the list of nodes
     char** ip_list = (char**)malloc(sizeof(char*) * (MAX_IPS));
     MALLOC_CHK(ip_list);
+    int* port_list = (int*)malloc(sizeof(int) * (MAX_IPS));
+    MALLOC_CHK(port_list);    
     char* ip_list_name = argv[1];
     FILE* ip_list_fp = fopen(ip_list_name, "r");
     NULL_CHK(ip_list_fp);
     int32_t ip_cnt = 0;
+    int line_number=0;
     while (1) {
         size_t line_size = MAX_IP_LEN;
         char* line =
@@ -297,12 +301,14 @@ int main(int argc, char* argv[]) {
         if (readlinebytes == -1) { //file has ended
             free(line);
             break;
-        } else if (readlinebytes > MAX_IP_LEN) {
+        } 
+        line_number++;
+        /*else if (readlinebytes > MAX_IP_LEN) { //not needed because we use getline
             free(line);
             ERROR("The IP length %s is longer hard coded limit %d\n", line,
                   MAX_IP_LEN);
             exit(EXIT_FAILURE);
-        }
+        }*/
         if (ip_cnt > MAX_IPS) {
             free(line);
             ERROR("The number of entries in %s exceeded the hard coded limit "
@@ -311,7 +317,7 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
         }
         if (line[0] == '#' || line[0] == '\n' ||
-            line[0] == '\r') { //comments and emprty lines
+            line[0] == '\r') { //comments and empty lines
             free(line);
             continue;
         }
@@ -319,6 +325,24 @@ int main(int argc, char* argv[]) {
             line[readlinebytes - 1] == '\r') {
             line[readlinebytes - 1] = '\0';
         }
+        char *token = line;
+        token = strtok(token, "\t ");
+        if(token==NULL){
+            ERROR("Malformed configuration file, %s line %d",file_list_name,line_number);
+            exit(EXIT_FAILURE);
+        }
+        token = strtok(NULL, "\t ");
+        if(token!=NULL){
+            port_list[ip_cnt]=atoi(token);
+            if(port_list[ip_cnt]<=0 || port_list[ip_cnt]>65535){
+               ERROR("Malformed configuration file, invalid port number, %s line %d",file_list_name,line_number); 
+               exit(EXIT_FAILURE); 
+            }
+        }
+        else{
+            port_list[ip_cnt]=PORT;
+        }
+
         ip_list[ip_cnt] = line;
         ip_cnt++;
     }
@@ -332,6 +356,7 @@ int main(int argc, char* argv[]) {
     core.file_list_cnt = file_list_cnt;
     core.file_list_idx = 0;
     core.ip_list = ip_list;
+    core.port_list = port_list;
     core.failed_cnt = 0;
 
     //create threads for each node
@@ -391,7 +416,7 @@ int main(int argc, char* argv[]) {
     }
 
     INFO("Everything done. Elapsed time: %.3fh",(realtime() - realtime0)/3600);
-    //todo : free iplist and filelist
+    //todo : free iplist, port list and filelist
 
     return 0;
 }

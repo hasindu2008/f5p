@@ -63,11 +63,21 @@ void sig_handler(int sig) {
 int main(int argc, char* argv[]) {
     signal(SIGSEGV, sig_handler);
 
+    int port = PORT;
+    //arg test, get port
+    if(argc==2){
+        port = atoi(argv[1]);
+        if(port<=0 || port>65535){
+            ERROR("Invalid port number %d",port); 
+            exit(EXIT_FAILURE);
+        }
+    }
+
     //buffer for communication
     char buffer[BUFFER_SIZE];
 
     //create a listening socket on port
-    int listenfd = TCP_server_init(PORT);
+    int listenfd = TCP_server_init(port);
 
     while (1) {
         //accept a client connection
