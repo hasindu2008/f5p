@@ -34,6 +34,7 @@ SOFTWARE.
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
+#include <stdint.h>
 
 //verbosity
 int verbose_socklibc = 1; //1 special-recommended //2 errors, //3 warnings //4 info
@@ -44,13 +45,13 @@ int verbose_socklibc = 1; //1 special-recommended //2 errors, //3 warnings //4 i
 void errorCheck(int ret, char* msg);
 
 /*Send length number of bytes from the buffer. This is a blocking call.*/
-void send_all(int socket, void* buffer, long length);
+void send_all(int socket, void* buffer, int64_t length);
 
 /*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
-void recv_all(int socket, void* buffer, long length);
+void recv_all(int socket, void* buffer, int64_t length);
 
 //receive all but try only number of 'times' before giving up
-int recv_all_try(int socket, void* buffer, long length, int times);
+int recv_all_try(int socket, void* buffer, int64_t length, int times);
 
 //some macros
 #define WARNING(arg, ...)                                                      \
@@ -65,15 +66,15 @@ int recv_all_try(int socket, void* buffer, long length, int times);
 /*******************************Blocking send and receive***********************************/
 
 /*Send the number of bytes to be sent. Then send the actual data.*/
-void send_full_msg(int socket, void* buffer, long length) {
-    send_all(socket, &length, sizeof(long));
+void send_full_msg(int socket, void* buffer, int64_t length) {
+    send_all(socket, &length, sizeof(int64_t));
     send_all(socket, buffer, length);
 }
 
 /*First receive the number of bytes to be received. Then receive the actual data to the buffer. */
-long recv_full_msg(int socket, void* buffer, long length) {
-    long expected_length = 0;
-    recv_all(socket, &expected_length, sizeof(long));
+int64_t recv_full_msg(int socket, void* buffer, int64_t length) {
+    int64_t expected_length = 0;
+    recv_all(socket, &expected_length, sizeof(int64_t));
 
 	if(verbose_socklibc>=4){	
 		INFO("Receiving a message of size %ld.", expected_length);
@@ -88,9 +89,9 @@ long recv_full_msg(int socket, void* buffer, long length) {
     return expected_length;
 }
 
-long recv_full_msg_try(int socket, void* buffer, long length, int times) {
-    long expected_length = 0;
-    long ret = recv_all_try(socket, &expected_length, sizeof(long), times);
+int64_t recv_full_msg_try(int socket, void* buffer, int64_t length, int times) {
+    int64_t expected_length = 0;
+    int64_t ret = recv_all_try(socket, &expected_length, sizeof(int64_t), times);
     if (ret < 0) {
         return ret;
     }
@@ -356,9 +357,9 @@ void errorCheck(int ret, char* msg) {
 }
 
 /*Send length number of bytes from the buffer. This is a blocking call.*/
-void send_all(int socket, void* buffer, long length) {
+void send_all(int socket, void* buffer, int64_t length) {
     char* ptr = (char*)buffer;
-    long i = 0;
+    int64_t i = 0;
     while (length > 0) {
         i = send(socket, ptr, length, 0);
         if (i < 1) {
@@ -374,9 +375,9 @@ void send_all(int socket, void* buffer, long length) {
 }
 
 /*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
-void recv_all(int socket, void* buffer, long length) {
+void recv_all(int socket, void* buffer, int64_t length) {
     char* ptr = (char*)buffer;
-    long i = 0;
+    int64_t i = 0;
     while (length > 0) {
         i = recv(socket, ptr, length, 0);
         if (i < 1) {
@@ -392,9 +393,9 @@ void recv_all(int socket, void* buffer, long length) {
 }
 
 /*Receive length number of bytes to the buffer. This is a blocking call. Make sure that buffer is big enough.*/
-int recv_all_try(int socket, void* buffer, long length, int times) {
+int recv_all_try(int socket, void* buffer, int64_t length, int times) {
     char* ptr = (char*)buffer;
-    long i = 0;
+    int64_t i = 0;
     int counter = 0;
     while (length > 0) {
         i = recv(socket, ptr, length, 0);

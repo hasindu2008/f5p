@@ -23,6 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#include <stdint.h>
 /******************************* Blocking Send and Receive Functions***********************************/
 
 /*  Function to send data
@@ -38,7 +39,7 @@ SOFTWARE.
     receiver will be able wait until all data is received.
     
 */
-void send_full_msg(int socket, void* buffer, long length);
+void send_full_msg(int socket, void* buffer, int64_t length);
 
 /*  Function to receive data 
 
@@ -54,10 +55,10 @@ void send_full_msg(int socket, void* buffer, long length);
     which is needed inside the function to prevent any overflows. 
     
 */
-long recv_full_msg(int socket, void* buffer, long length);
+int64_t recv_full_msg(int socket, void* buffer, int64_t length);
 
 //similar to recv_full_msg but try only a number of times specified by 'times' before giving up
-long recv_full_msg_try(int socket, void* buffer, long length, int times);
+int64_t recv_full_msg_try(int socket, void* buffer, int64_t length, int times);
 
 /***************************Server side*******************************************************/
 
